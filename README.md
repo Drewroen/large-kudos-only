@@ -44,8 +44,39 @@ cp .env.example .env
 
    This writes `auth_state.json` (or whatever `AUTH_STATE_PATH` points to).
 
+   You don't need to save the export to a file first — Cookie-Editor's
+   "Export" also copies the JSON to your clipboard, so you can pipe it in
+   directly by passing `-` as the input:
+
+   ```bash
+   pbpaste | uv run python convert_cookies.py -           # macOS
+   xclip -selection clipboard -o | uv run python convert_cookies.py -   # Linux (X11)
+   wl-paste | uv run python convert_cookies.py -           # Linux (Wayland)
+   ```
+
+   Or just use the Makefile, which picks the right clipboard command for
+   your OS automatically:
+
+   ```bash
+   make refresh-local   # clipboard -> auth_state.json
+   ```
+
 Repeat this whenever your session expires — `kudos_bot.py` will tell you
 clearly if that's happened.
+
+If you're running on GitHub Actions (see below), add `--push` to skip the
+manual copy-paste into the Secrets UI and upload the result straight to the
+`STRAVA_AUTH_STATE` secret instead — combine it with `-` to go straight from
+clipboard to secret with no intermediate files at all:
+
+```bash
+pbpaste | uv run python convert_cookies.py - --push
+# or, equivalently:
+make refresh
+```
+
+This requires the [GitHub CLI](https://cli.github.com/) (`gh`), authenticated
+via `gh auth login`.
 
 ## Running locally
 
@@ -83,9 +114,10 @@ Since there's no interactive browser in CI, the session has to be supplied as
 a secret:
 
 1. Follow the steps above locally to produce `auth_state.json`.
-2. Copy its full contents.
-3. Add a repository secret named `STRAVA_AUTH_STATE` under **Settings →
-   Secrets and variables → Actions** with that content.
+2. Either run `convert_cookies.py` with `--push` (fastest — see above) to
+   upload it directly, or copy its full contents and add a repository secret
+   named `STRAVA_AUTH_STATE` under **Settings → Secrets and variables →
+   Actions** by hand.
 
 The workflow writes the secret to `auth_state.json` at the start of each run,
 runs headless, and uploads a screenshot artifact (`screenshots/`) if the run
@@ -93,7 +125,9 @@ fails, to help diagnose what went wrong.
 
 **The session will eventually expire** (Strava session cookies aren't
 indefinite). When scheduled runs start failing with "saved session ... has
-expired," repeat the steps above to refresh the `STRAVA_AUTH_STATE` secret.
+expired," log into strava.com, export cookies via Cookie-Editor, then run
+`make refresh` — that's the fastest path to a refreshed `STRAVA_AUTH_STATE`
+secret.
 
 ## Notes / troubleshooting
 
