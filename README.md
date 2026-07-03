@@ -44,15 +44,26 @@ cp .env.example .env
 
    This writes `auth_state.json` (or whatever `AUTH_STATE_PATH` points to).
 
+   You don't need to save the export to a file first — Cookie-Editor's
+   "Export" also copies the JSON to your clipboard, so you can pipe it in
+   directly by passing `-` as the input:
+
+   ```bash
+   pbpaste | uv run python convert_cookies.py -           # macOS
+   xclip -selection clipboard -o | uv run python convert_cookies.py -   # Linux (X11)
+   wl-paste | uv run python convert_cookies.py -           # Linux (Wayland)
+   ```
+
 Repeat this whenever your session expires — `kudos_bot.py` will tell you
 clearly if that's happened.
 
 If you're running on GitHub Actions (see below), add `--push` to skip the
 manual copy-paste into the Secrets UI and upload the result straight to the
-`STRAVA_AUTH_STATE` secret instead:
+`STRAVA_AUTH_STATE` secret instead — combine it with `-` to go straight from
+clipboard to secret with no intermediate files at all:
 
 ```bash
-uv run python convert_cookies.py strava_cookies.json --push
+pbpaste | uv run python convert_cookies.py - --push
 ```
 
 This requires the [GitHub CLI](https://cli.github.com/) (`gh`), authenticated

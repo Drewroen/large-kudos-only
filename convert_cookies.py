@@ -15,6 +15,10 @@ The --push flag skips the manual "copy auth_state.json into the GitHub
 Secrets UI" step by uploading it straight to the STRAVA_AUTH_STATE repo
 secret via the GitHub CLI (`gh`), which must be installed and authenticated
 (`gh auth login`).
+
+Pass "-" as the input to read the exported JSON from stdin instead of a
+file - handy for piping straight from the clipboard, e.g.:
+    pbpaste | uv run python convert_cookies.py - --push
 """
 import argparse
 import json
@@ -77,7 +81,7 @@ def push_secret(output_path: Path, secret_name: str, repo: str | None) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("input", nargs="?", default=DEFAULT_INPUT, help="Cookie-Editor JSON export")
+    parser.add_argument("input", nargs="?", default=DEFAULT_INPUT, help="Cookie-Editor JSON export, or '-' to read from stdin")
     parser.add_argument("output", nargs="?", default=DEFAULT_OUTPUT, help="Playwright storage_state output path")
     parser.add_argument(
         "--push", action="store_true", help=f"also upload the result to the {DEFAULT_SECRET_NAME} GitHub secret via gh"
@@ -86,15 +90,19 @@ def main() -> None:
     parser.add_argument("--repo", default=None, help="owner/repo to use with --push (default: inferred by gh from the current directory)")
     args = parser.parse_args()
 
-    input_path = Path(args.input)
     output_path = Path(args.output)
 
-    if not input_path.exists():
-        print(f"Input file not found: {input_path}", file=sys.stderr)
-        print(f"Usage: uv run python convert_cookies.py <exported-cookies.json> [{DEFAULT_OUTPUT}]", file=sys.stderr)
-        sys.exit(1)
+    if args.input == "-":
+        raw_text = sys.stdin.read()
+    else:
+        input_path = Path(args.input)
+        if not input_path.exists():
+            print(f"Input file not found: {input_path}", file=sys.stderr)
+            print(f"Usage: uv run python convert_cookies.py <exported-cookies.json> [{DEFAULT_OUTPUT}]", file=sys.stderr)
+            sys.exit(1)
+        raw_text = input_path.read_text()
 
-    raw_cookies = json.loads(input_path.read_text())
+    raw_cookies = json.loads(raw_text)
     storage_state = convert(raw_cookies)
     output_path.write_text(json.dumps(storage_state, indent=2))
     print(f"Wrote {len(storage_state['cookies'])} cookies to {output_path}")
