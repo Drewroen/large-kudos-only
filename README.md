@@ -54,6 +54,13 @@ cp .env.example .env
    wl-paste | uv run python convert_cookies.py -           # Linux (Wayland)
    ```
 
+   Or just use the Makefile, which picks the right clipboard command for
+   your OS automatically:
+
+   ```bash
+   make refresh-local   # clipboard -> auth_state.json
+   ```
+
 Repeat this whenever your session expires — `kudos_bot.py` will tell you
 clearly if that's happened.
 
@@ -64,6 +71,8 @@ clipboard to secret with no intermediate files at all:
 
 ```bash
 pbpaste | uv run python convert_cookies.py - --push
+# or, equivalently:
+make refresh
 ```
 
 This requires the [GitHub CLI](https://cli.github.com/) (`gh`), authenticated
@@ -116,9 +125,9 @@ fails, to help diagnose what went wrong.
 
 **The session will eventually expire** (Strava session cookies aren't
 indefinite). When scheduled runs start failing with "saved session ... has
-expired," repeat the steps above to refresh the `STRAVA_AUTH_STATE` secret —
-steps 1-4 under "Create a session from your browser's cookies," then
-`convert_cookies.py ... --push`, is the fastest path.
+expired," log into strava.com, export cookies via Cookie-Editor, then run
+`make refresh` — that's the fastest path to a refreshed `STRAVA_AUTH_STATE`
+secret.
 
 ## Notes / troubleshooting
 
