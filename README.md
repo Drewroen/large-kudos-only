@@ -47,6 +47,17 @@ cp .env.example .env
 Repeat this whenever your session expires — `kudos_bot.py` will tell you
 clearly if that's happened.
 
+If you're running on GitHub Actions (see below), add `--push` to skip the
+manual copy-paste into the Secrets UI and upload the result straight to the
+`STRAVA_AUTH_STATE` secret instead:
+
+```bash
+uv run python convert_cookies.py strava_cookies.json --push
+```
+
+This requires the [GitHub CLI](https://cli.github.com/) (`gh`), authenticated
+via `gh auth login`.
+
 ## Running locally
 
 Watch it work with a visible browser:
@@ -83,9 +94,10 @@ Since there's no interactive browser in CI, the session has to be supplied as
 a secret:
 
 1. Follow the steps above locally to produce `auth_state.json`.
-2. Copy its full contents.
-3. Add a repository secret named `STRAVA_AUTH_STATE` under **Settings →
-   Secrets and variables → Actions** with that content.
+2. Either run `convert_cookies.py` with `--push` (fastest — see above) to
+   upload it directly, or copy its full contents and add a repository secret
+   named `STRAVA_AUTH_STATE` under **Settings → Secrets and variables →
+   Actions** by hand.
 
 The workflow writes the secret to `auth_state.json` at the start of each run,
 runs headless, and uploads a screenshot artifact (`screenshots/`) if the run
@@ -93,7 +105,9 @@ fails, to help diagnose what went wrong.
 
 **The session will eventually expire** (Strava session cookies aren't
 indefinite). When scheduled runs start failing with "saved session ... has
-expired," repeat the steps above to refresh the `STRAVA_AUTH_STATE` secret.
+expired," repeat the steps above to refresh the `STRAVA_AUTH_STATE` secret —
+steps 1-4 under "Create a session from your browser's cookies," then
+`convert_cookies.py ... --push`, is the fastest path.
 
 ## Notes / troubleshooting
 
