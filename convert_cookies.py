@@ -38,10 +38,51 @@ SAME_SITE_MAP = {
     "unspecified": "Lax",
 }
 
+EXPORT_INSTRUCTIONS = """
+To fix this:
+  1. Log into strava.com in your regular, non-automated browser.
+  2. Open the Cookie-Editor extension while on strava.com.
+  3. Choose Export -> Export as JSON (this copies the cookies to your
+     clipboard).
+  4. Re-run this command right away, e.g.:
+       pbpaste | uv run python convert_cookies.py -
+     or, using the Makefile:
+       make refresh
+""".strip()
+
+
+class CookieInputError(Exception):
+    """Raised when the cookie JSON is missing, empty, or malformed."""
+
+
+def parse_cookie_json(raw_text: str) -> list:
+    if not raw_text.strip():
+        raise CookieInputError("No cookie data was given (input was empty).")
+
+    try:
+        parsed = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise CookieInputError(f"Input isn't valid JSON ({exc}).") from exc
+
+    if not isinstance(parsed, list):
+        raise CookieInputError(
+            f"Expected a JSON array of cookies, got {type(parsed).__name__}."
+        )
+    if not parsed:
+        raise CookieInputError("Cookie list is empty - nothing to convert.")
+
+    return parsed
+
 
 def convert(raw_cookies: list) -> dict:
     cookies = []
-    for c in raw_cookies:
+    for i, c in enumerate(raw_cookies):
+        for required_field in ("name", "value", "domain"):
+            if required_field not in c:
+                raise CookieInputError(
+                    f"Cookie #{i} is missing required field '{required_field}' - "
+                    "this doesn't look like a Cookie-Editor export."
+                )
         same_site_raw = str(c.get("sameSite", "unspecified")).lower()
         cookies.append(
             {
@@ -97,13 +138,19 @@ def main() -> None:
     else:
         input_path = Path(args.input)
         if not input_path.exists():
-            print(f"Input file not found: {input_path}", file=sys.stderr)
-            print(f"Usage: uv run python convert_cookies.py <exported-cookies.json> [{DEFAULT_OUTPUT}]", file=sys.stderr)
+            print(f"Error: input file not found: {input_path}\n", file=sys.stderr)
+            print(EXPORT_INSTRUCTIONS, file=sys.stderr)
             sys.exit(1)
         raw_text = input_path.read_text()
 
-    raw_cookies = json.loads(raw_text)
-    storage_state = convert(raw_cookies)
+    try:
+        raw_cookies = parse_cookie_json(raw_text)
+        storage_state = convert(raw_cookies)
+    except CookieInputError as exc:
+        print(f"Error: {exc}\n", file=sys.stderr)
+        print(EXPORT_INSTRUCTIONS, file=sys.stderr)
+        sys.exit(1)
+
     output_path.write_text(json.dumps(storage_state, indent=2))
     print(f"Wrote {len(storage_state['cookies'])} cookies to {output_path}")
 
