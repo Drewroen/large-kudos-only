@@ -1,0 +1,39 @@
+name: Strava Kudos Bot
+
+on:
+  schedule:
+    # Runs once an hour, on the hour. Adjust to taste.
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  kudos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync
+          uv run playwright install --with-deps chromium
+
+      - name: Restore saved Strava session
+        env:
+          STRAVA_AUTH_STATE: ${{ secrets.STRAVA_AUTH_STATE }}
+        run: echo "$STRAVA_AUTH_STATE" > auth_state.json
+
+      - name: Run kudos bot
+        env:
+          HEADLESS: "true"
+        run: uv run python kudos_bot.py
+
+      - name: Upload failure screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-screenshot
+          path: screenshots/

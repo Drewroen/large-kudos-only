@@ -1,0 +1,9 @@
+.env
+auth_state.json
+strava_cookies.json
+*_cookies.json
+__pycache__/
+*.pyc
+screenshots/
+.venv/
+venv/
