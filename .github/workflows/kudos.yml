@@ -1,9 +1,14 @@
-name: Strava Kudos Bot
+name: K U D O S
 
 on:
   schedule:
-    # Runs once an hour, on the hour. Adjust to taste.
-    - cron: "0 * * * *"
+    - cron: '35 14 * * *'
+    - cron: '47 15 * * *'
+    - cron: '2 17 * * *'
+    - cron: '41 19 * * *'
+    - cron: '1 21 * * *'
+    - cron: '2 0 * * *'
+    - cron: '13 2 * * *'
   workflow_dispatch: {}
 
 jobs:
