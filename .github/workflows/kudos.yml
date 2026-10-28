@@ -9,10 +9,14 @@ on:
     - cron: '1 21 * * *'
     - cron: '2 0 * * *'
     - cron: '13 2 * * *'
+    # Monthly no-op run that commits a timestamp: pushes reset GitHub's
+    # 60-day inactivity timer, which otherwise disables scheduled workflows.
+    - cron: '23 3 1 * *'
   workflow_dispatch: {}
 
 jobs:
   kudos:
+    if: github.event.schedule != '23 3 1 * *'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,3 +46,20 @@ jobs:
         with:
           name: failure-screenshot
           path: screenshots/
+
+  keepalive:
+    if: github.event.schedule == '23 3 1 * *'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Commit keepalive timestamp
+        run: |
+          date -u +%Y-%m-%dT%H:%M:%SZ > .keepalive
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .keepalive
+          git commit -m "chore: keepalive $(date -u +%Y-%m-%d)"
+          git push
