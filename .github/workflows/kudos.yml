@@ -9,14 +9,14 @@ on:
     - cron: '1 21 * * *'
     - cron: '2 0 * * *'
     - cron: '13 2 * * *'
-    # Monthly no-op run that commits a timestamp: pushes reset GitHub's
+    # Weekly no-op run that commits a timestamp: pushes reset GitHub's
     # 60-day inactivity timer, which otherwise disables scheduled workflows.
-    - cron: '23 3 1 * *'
+    - cron: '23 3 * * 1'
   workflow_dispatch: {}
 
 jobs:
   kudos:
-    if: github.event.schedule != '23 3 1 * *'
+    if: github.event.schedule != '23 3 * * 1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +48,7 @@ jobs:
           path: screenshots/
 
   keepalive:
-    if: github.event.schedule == '23 3 1 * *'
+    if: github.event.schedule == '23 3 * * 1'
     runs-on: ubuntu-latest
     permissions:
       contents: write
